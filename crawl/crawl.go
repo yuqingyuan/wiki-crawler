@@ -38,7 +38,7 @@ func HomeLinks(completion func([]string)) {
 	c.Visit("https://zh.wikipedia.org/wiki/%E5%8E%86%E5%8F%B2%E4%B8%8A%E7%9A%84%E4%BB%8A%E5%A4%A9")
 }
 
-var events = make([]model.Event, 0)
+var events []model.Event
 
 // 抓取Wiki历史上的今天
 func DailyEvent(links []string, completion func([]model.Event)) {
@@ -46,6 +46,7 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL.String())
+		events = make([]model.Event, 0)
 	})
 
 	c.OnHTML("ul>li", func(e *colly.HTMLElement) {
