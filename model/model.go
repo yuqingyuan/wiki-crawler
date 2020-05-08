@@ -7,22 +7,15 @@ import (
 	"math"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
 type EventType int8
 
 const (
-	EventUnknown EventType = -1
 	EventNormal = iota
 	EventBirth
 	EventDeath
-)
-
-var (
-	lastEventYear  = math.MaxInt64
-	eventType 	   = EventUnknown
 )
 
 type Event struct {
@@ -32,8 +25,8 @@ type Event struct {
 	Links 	string 	`gorm:"type:LONGTEXT"`
 }
 
-// 将抓取到的内容转为对象(历史事件|出生|逝世,这三者通过年份升序区分,升序->降序)
-func ProcessEvent(e *colly.HTMLElement, eventDetail string) Event {
+// 将抓取到的内容转为对象(历史事件|出生|逝世)
+func ProcessEvent(e *colly.HTMLElement, eventDetail string, eventType EventType) Event {
 	detail := eventDetail
 	texts := e.ChildTexts("a")
 	links := e.ChildAttrs("a", "href")
@@ -61,12 +54,6 @@ func ProcessEvent(e *colly.HTMLElement, eventDetail string) Event {
 	for i := 0; i < int(minLen); i++ {
 		linksMap[texts[i]] = links[i]
 	}
-	// 根据年份升序与否区分事件类型
-	var curYear, _ = strconv.Atoi(strings.Trim(year, "年"))
-	if curYear < lastEventYear {
-		eventType += 1
-	}
-	lastEventYear = curYear
 	// 事件发生日期
 	components := strings.Split(e.Request.URL.String(), "/")
 	var eventDate string
@@ -77,11 +64,6 @@ func ProcessEvent(e *colly.HTMLElement, eventDetail string) Event {
 	}
 	result, _ := json.Marshal(linksMap)
 	return Event{eventType, eventDate, detail, string(result)}
-}
-
-func Clear() {
-	lastEventYear = math.MaxInt64
-	eventType = EventUnknown
 }
 
 func parseData(date string) string {

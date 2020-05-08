@@ -14,11 +14,7 @@ var (
 )
 
 func init() {
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local", username, password, dbName))
-	if err != nil {
-		fmt.Println(err)
-	}
-	database = db
+	database, _ = gorm.Open("mysql", fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local", username, password, dbName))
 }
 
 func CloseDB() {

@@ -38,7 +38,10 @@ func HomeLinks(completion func([]string)) {
 	c.Visit("https://zh.wikipedia.org/wiki/%E5%8E%86%E5%8F%B2%E4%B8%8A%E7%9A%84%E4%BB%8A%E5%A4%A9")
 }
 
-var events []model.Event
+var (
+	events []model.Event
+	eventRegexp = regexp.MustCompile(`^[\d]{1,4}年\D.*`)
+)
 
 // 抓取Wiki历史上的今天
 func DailyEvent(links []string, completion func([]model.Event)) {
@@ -49,28 +52,41 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 		events = make([]model.Event, 0)
 	})
 
-	c.OnHTML("ul>li", func(e *colly.HTMLElement) {
-		if e.Name == "li" {
-			// 指定抓取内容
-			eventRegexp := regexp.MustCompile(`^[\d]{1,4}年\D.*`)
-			// 去除换行以及首个空格
-			e.Text = strings.ReplaceAll(e.Text, "\n", " ")
-			e.Text = strings.Replace(e.Text, " ", "", 1)
-			// 正则匹配
-			params := eventRegexp.FindStringSubmatch(e.Text)
-			for _, param := range params {
-				events = append(events, model.ProcessEvent(e, param))
-			}
+	// 大事记
+	c.OnHTML("h3+ul>li", func(e *colly.HTMLElement) {
+		for _, param := range formatAndRegularText(e.Text) {
+			events = append(events, model.ProcessEvent(e, param, model.EventNormal))
 		}
 	})
 
+	// 出生
+	c.OnHTML("h2:has(span#出生)+ul>li", func(e *colly.HTMLElement) {
+		for _, param := range formatAndRegularText(e.Text) {
+			events = append(events, model.ProcessEvent(e, param, model.EventBirth))
+		}
+	})
+
+	// 逝世
+	c.OnHTML("h2:has(span#逝世)+ul>li", func(e *colly.HTMLElement) {
+		for _, param := range formatAndRegularText(e.Text) {
+			events = append(events, model.ProcessEvent(e, param, model.EventDeath))
+		}
+	})
+
+	// 回调以及清理数据
 	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("Finish crawling daily event, return events")
-		model.Clear()
 		completion(events)
+		fmt.Println("Finish crawling daily event, return events")
 	})
 
 	for _, v := range links {
 		c.Visit(v)
 	}
+}
+
+// 去除换行以及首个空格
+func formatAndRegularText(target string) []string {
+	target = strings.ReplaceAll(target, "\n", " ")
+	target = strings.Replace(target, " ", "", 1)
+	return eventRegexp.FindStringSubmatch(target)
 }
