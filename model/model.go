@@ -27,28 +27,41 @@ type Event struct {
 	Links 	string 	`gorm:"type:LONGTEXT"`
 }
 
+var (
+	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年`)
+	linkRegexp 	 = regexp.MustCompile(`\[\d+]`)
+	sourceRegexp = regexp.MustCompile(`\[来源请求]`)
+)
+
 // 将抓取到的内容转为对象(历史事件|出生|逝世)
-func ProcessEvent(e *colly.HTMLElement, eventDetail string, eventType EventType) Event {
-	detail := eventDetail
+func ProcessEvent(e *colly.HTMLElement, detail string, eventType EventType) Event {
 	texts := e.ChildTexts("a")
 	links := e.ChildAttrs("a", "href")
-	// 年份
+	// 事件发生日期
 	var year string
 	// 去除不必要的年份前缀以及链接
-	if len(texts) > 0 {
-		eventRegexp := regexp.MustCompile(`^前?\d{1,4}年`)
-		params := eventRegexp.FindStringSubmatch(eventDetail)
-		for _, param := range params {
-			year = param
-			detail = strings.Trim(detail, year+"：")
-			// 去除年份链接
-			if texts[0] == year {
-				texts = texts[1:len(texts)]
-				if len(links) > 0 {
-					links = links[1:len(links)]
-				}
+	for i := 0; i < len(texts); {
+		ignoreYear := texts[i]
+		if dateRegexp.MatchString(texts[i]) {
+			texts = append(texts[:i], texts[i+1:]...)
+			links = append(links[:i], links[i+1:]...)
+			if strings.Contains(detail, ignoreYear+"：") {
+				year = ignoreYear
+				detail = strings.Trim(detail, ignoreYear+"：")
 			}
+		} else {
+			i++
 		}
+	}
+	// 去除文献引用
+	params := linkRegexp.FindAllString(detail, math.MaxInt8)
+	for _, param := range params {
+		detail = strings.ReplaceAll(detail, param, "")
+	}
+	// 去除来源请求
+	params = sourceRegexp.FindAllString(detail, math.MaxInt8)
+	for _, param := range params {
+		detail = strings.ReplaceAll(detail, param, "")
 	}
 	// Event实例,构建关键字链接
 	linksMap := make(map[string]string)
