@@ -20,6 +20,8 @@ const (
 
 type Event struct {
 	Class	EventType
+	// 是否为公元前
+	IsBC	bool
 	Date 	string
 	Detail	string	`gorm:"type:LONGTEXT"`
 	Links 	string 	`gorm:"type:LONGTEXT"`
@@ -34,7 +36,7 @@ func ProcessEvent(e *colly.HTMLElement, eventDetail string, eventType EventType)
 	var year string
 	// 去除不必要的年份前缀以及链接
 	if len(texts) > 0 {
-		eventRegexp := regexp.MustCompile(`^[\d]{1,4}年`)
+		eventRegexp := regexp.MustCompile(`^前?\d{1,4}年`)
 		params := eventRegexp.FindStringSubmatch(eventDetail)
 		for _, param := range params {
 			year = param
@@ -48,7 +50,7 @@ func ProcessEvent(e *colly.HTMLElement, eventDetail string, eventType EventType)
 			}
 		}
 	}
-	// Event实例
+	// Event实例,构建关键字链接
 	linksMap := make(map[string]string)
 	minLen := math.Min(float64(len(texts)), float64(len(links)))
 	for i := 0; i < int(minLen); i++ {
@@ -57,18 +59,23 @@ func ProcessEvent(e *colly.HTMLElement, eventDetail string, eventType EventType)
 	// 事件发生日期
 	components := strings.Split(e.Request.URL.String(), "/")
 	var eventDate string
+	var isBC bool
 	if len(components) > 0 {
 		result, _ := url.QueryUnescape(components[len(components) - 1])
 		// 格式化日期(time库太难用....)
-		eventDate = parseData(year + result)
+		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
-	return Event{eventType, eventDate, detail, string(result)}
+	return Event{eventType, isBC, eventDate, detail, string(result)}
 }
 
-func parseData(date string) string {
+func parseData(date string) (string, bool) {
 	date = strings.ReplaceAll(date, "年", "-")
 	date = strings.ReplaceAll(date, "月", "-")
 	date = strings.ReplaceAll(date, "日", "")
-	return date
+	isBC := strings.Contains(date, "前")
+	if isBC {
+		date = strings.Replace(date, "前", "", 1)
+	}
+	return date, isBC
 }

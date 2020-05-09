@@ -17,7 +17,7 @@ func main() {
 		fmt.Println("链接数量: ", len(links))
 		// 抓取每日详细内容,并写入数据库
 		crawl.DailyEvent(links, func(events []model.Event) {
-			//TODO: 写入数据库
+			// 写入数据库
 			model.InsertIntoDataTable(events)
 		})
 	})

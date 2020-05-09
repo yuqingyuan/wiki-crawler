@@ -3,6 +3,7 @@ package crawl
 import (
 	"fmt"
 	"github.com/gocolly/colly"
+	"net/http"
 	"regexp"
 	"strings"
 	"wiki-crawler/model"
@@ -40,7 +41,7 @@ func HomeLinks(completion func([]string)) {
 
 var (
 	events []model.Event
-	eventRegexp = regexp.MustCompile(`^[\d]{1,4}年\D.*`)
+	eventRegexp = regexp.MustCompile(`^前?\d{1,4}年.*`)
 )
 
 // 抓取Wiki历史上的今天
@@ -73,14 +74,15 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 		}
 	})
 
-	// 回调以及清理数据
+	// 回调当前链接所有事件
 	c.OnScraped(func(r *colly.Response) {
 		completion(events)
 		fmt.Println("Finish crawling daily event, return events")
 	})
 
 	for _, v := range links {
-		c.Visit(v)
+		// 指定wiki网页为简体中文
+		c.Request("GET", v, nil, nil, http.Header{"accept-language":[]string{"zh-CN"}})
 	}
 }
 
