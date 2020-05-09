@@ -56,23 +56,17 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 
 	// 大事记
 	c.OnHTML("h3+ul>li", func(e *colly.HTMLElement) {
-		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventNormal))
-		}
+		processEvents(e, model.EventNormal)
 	})
 
 	// 出生
 	c.OnHTML("h2:has(span#出生)+ul>li", func(e *colly.HTMLElement) {
-		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventBirth))
-		}
+		processEvents(e, model.EventBirth)
 	})
 
 	// 逝世
 	c.OnHTML("h2:has(span#逝世)+ul>li", func(e *colly.HTMLElement) {
-		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventDeath))
-		}
+		processEvents(e, model.EventDeath)
 	})
 
 	// 回调当前链接所有事件
@@ -87,9 +81,28 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 	}
 }
 
+func processEvents(e *colly.HTMLElement, eventType model.EventType) {
+	year := dateRegexp.FindString(e.Text)
+	for _, param := range formatAndRegularText(e.Text) {
+		for _, text := range removeDateAndSplitText(param, year) {
+			if len(text) != 0 {
+				events = append(events, model.ProcessEvent(e, year, text, eventType))
+			}
+		}
+	}
+}
+
 // 去除换行以及首个空格
 func formatAndRegularText(target string) []string {
-	target = strings.ReplaceAll(target, "\n", " ")
+	target = strings.ReplaceAll(target, "\n", "&&")
 	target = strings.Replace(target, " ", "", 1)
 	return eventRegexp.FindStringSubmatch(target)
+}
+
+// 去除年份前缀
+func removeDateAndSplitText(target string, year string) []string  {
+	if strings.Contains(target, year+"：") {
+		target = strings.Trim(target, year+"：")
+	}
+	return strings.Split(target, "&&")
 }

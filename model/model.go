@@ -37,10 +37,6 @@ var (
 func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType EventType) Event {
 	texts := e.ChildTexts("a")
 	links := e.ChildAttrs("a", "href")
-	// 去除年份前缀
-	if strings.Contains(detail, year+"：") {
-		detail = strings.Trim(detail, year+"：")
-	}
 	// 去除不必要的链接
 	for i := 0; i < len(texts); {
 		if dateRegexp.MatchString(texts[i]) {
@@ -64,7 +60,9 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 	linksMap := make(map[string]string)
 	minLen := math.Min(float64(len(texts)), float64(len(links)))
 	for i := 0; i < int(minLen); i++ {
-		linksMap[texts[i]] = links[i]
+		if strings.Contains(detail, texts[i]) {
+			linksMap[texts[i]] = links[i]
+		}
 	}
 	// 事件发生日期
 	components := strings.Split(e.Request.URL.String(), "/")
