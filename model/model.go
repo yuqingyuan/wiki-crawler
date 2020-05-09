@@ -34,21 +34,18 @@ var (
 )
 
 // 将抓取到的内容转为对象(历史事件|出生|逝世)
-func ProcessEvent(e *colly.HTMLElement, detail string, eventType EventType) Event {
+func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType EventType) Event {
 	texts := e.ChildTexts("a")
 	links := e.ChildAttrs("a", "href")
-	// 事件发生日期
-	var year string
-	// 去除不必要的年份前缀以及链接
+	// 去除年份前缀
+	if strings.Contains(detail, year+"：") {
+		detail = strings.Trim(detail, year+"：")
+	}
+	// 去除不必要的链接
 	for i := 0; i < len(texts); {
-		ignoreYear := texts[i]
 		if dateRegexp.MatchString(texts[i]) {
 			texts = append(texts[:i], texts[i+1:]...)
 			links = append(links[:i], links[i+1:]...)
-			if strings.Contains(detail, ignoreYear+"：") {
-				year = ignoreYear
-				detail = strings.Trim(detail, ignoreYear+"：")
-			}
 		} else {
 			i++
 		}

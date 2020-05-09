@@ -42,6 +42,7 @@ func HomeLinks(completion func([]string)) {
 var (
 	events []model.Event
 	eventRegexp = regexp.MustCompile(`^前?\d{1,4}年.*`)
+	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年`)
 )
 
 // 抓取Wiki历史上的今天
@@ -56,21 +57,21 @@ func DailyEvent(links []string, completion func([]model.Event)) {
 	// 大事记
 	c.OnHTML("h3+ul>li", func(e *colly.HTMLElement) {
 		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, param, model.EventNormal))
+			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventNormal))
 		}
 	})
 
 	// 出生
 	c.OnHTML("h2:has(span#出生)+ul>li", func(e *colly.HTMLElement) {
 		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, param, model.EventBirth))
+			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventBirth))
 		}
 	})
 
 	// 逝世
 	c.OnHTML("h2:has(span#逝世)+ul>li", func(e *colly.HTMLElement) {
 		for _, param := range formatAndRegularText(e.Text) {
-			events = append(events, model.ProcessEvent(e, param, model.EventDeath))
+			events = append(events, model.ProcessEvent(e, dateRegexp.FindString(e.Text), param, model.EventDeath))
 		}
 	})
 
