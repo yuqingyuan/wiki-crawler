@@ -28,7 +28,7 @@ type Event struct {
 }
 
 var (
-	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年`)
+	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年$`)
 	linkRegexp 	 = regexp.MustCompile(`\[\d+]`)
 	sourceRegexp = regexp.MustCompile(`\[来源请求]`)
 )

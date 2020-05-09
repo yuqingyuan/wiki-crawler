@@ -92,7 +92,7 @@ func processEvents(e *colly.HTMLElement, eventType model.EventType) {
 	}
 }
 
-// 去除换行以及首个空格
+// 去除换行以及首个空格,存在一行多个事件用&&分割
 func formatAndRegularText(target string) []string {
 	target = strings.ReplaceAll(target, "\n", "&&")
 	target = strings.Replace(target, " ", "", 1)
@@ -102,7 +102,16 @@ func formatAndRegularText(target string) []string {
 // 去除年份前缀
 func removeDateAndSplitText(target string, year string) []string  {
 	if strings.Contains(target, year+"：") {
-		target = strings.Trim(target, year+"：")
+		target = strings.ReplaceAll(target, year+"：", "")
+		return strings.Split(target, "&&")
+	}
+	if strings.Contains(target, year+":") {
+		target = strings.ReplaceAll(target, year+":", "")
+		return strings.Split(target, "&&")
+	}
+	if strings.Contains(target, year) {
+		target = strings.Replace(target, year, "", 1)
+		return strings.Split(target, "&&")
 	}
 	return strings.Split(target, "&&")
 }
