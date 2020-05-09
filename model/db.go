@@ -10,11 +10,11 @@ var (
 
 	username = "root"
 	password = "你的数据库密码"
-	dbName = "wiki_crawler"
+	dbName 	 = "wiki_crawler"
 )
 
 func init() {
-	database, _ = gorm.Open("mysql", fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local", username, password, dbName))
+	database, _ = gorm.Open("mysql", fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&parseTime=True&loc=Local", username, password, dbName))
 }
 
 func CloseDB() {
