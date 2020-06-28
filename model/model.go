@@ -5,7 +5,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gocolly/colly"
 	"math"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -26,8 +25,8 @@ type Event struct {
 	Date 	string
 	Detail	string	`gorm:"type:LONGTEXT"`
 	Links 	string 	`gorm:"type:LONGTEXT"`
-	ImgLink string	`gorm:"type:LONGTEXT"`
 }
+
 var (
 	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年$`)
 	linkRegexp 	 = regexp.MustCompile(`\[\d+]`)
@@ -59,14 +58,10 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 	}
 	// Event实例,构建关键字链接
 	linksMap := make(map[string]string)
-	var keyLink string
 	minLen := math.Min(float64(len(texts)), float64(len(links)))
 	for i := 0; i < int(minLen); i++ {
 		if strings.Contains(detail, texts[i]) {
 			linksMap[texts[i]] = links[i]
-			if len(keyLink) == 0 {
-				keyLink = links[i]
-			}
 		}
 	}
 	// 事件发生日期
@@ -75,27 +70,11 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 	var isBC bool
 	if len(components) > 0 {
 		result, _ := url.QueryUnescape(components[len(components) - 1])
-		// 格式化日期
+		// 格式化日期(time库太难用....)
 		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
-
-	event := Event{eventType, isBC, eventDate, detail, string(result), ""}
-
-	if len(keyLink) != 0 && eventType == EventNormal {
-		c := colly.NewCollector(colly.Async(true))
-		c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: math.MaxInt8})
-
-		c.OnHTML("meta[property=\"og:image\"]", func(e *colly.HTMLElement) {
-			event.ImgLink = e.Attr("content")
-		})
-
-		c.Request("GET", "https://zh.wikipedia.org"+keyLink, nil, nil, http.Header{"accept-language":[]string{"zh-CN"}})
-
-		c.Wait()
-	}
-
-	return event
+	return Event{eventType, isBC, eventDate, detail, string(result)}
 }
 
 func parseData(date string) (string, bool) {
