@@ -22,18 +22,34 @@ func main() {
 		})
 	})
 
+	eventsSum := model.EventsCount()
+	curIndex := 0
+
 	// 抓取图片
 	rows, err := model.FindAllEventsLinks()
 	if err != nil {
 		return
 	}
-	event := model.Event{}
 	for rows.Next() {
-		rows.Scan(&event.Class, &event.IsBC, &event.Date, &event.Detail, &event.Links, &event.ImgLinks)
-		crawl.EventPictures(event, func() {
+		event := model.Event{}
+		err := rows.Scan(&event.ID, &event.Class, &event.IsBC, &event.Date, &event.Detail, &event.Links, &event.ImgLinks)
+		if err != nil {
+			fmt.Println("Scan err", err)
+		}
+		crawl.EventPictures(&event, func(err2 error) {
 			model.UpdateEvent(event)
+			curIndex += 1
+			// 打印进度
+			if err2 != nil {
+				fmt.Println("Occurred error, skip")
+				return
+			}
+			fmt.Printf("图片抓取进度:%d/%d\n", curIndex, eventsSum)
 		})
 	}
 
-	defer model.CloseDB()
+	defer func(){
+		rows.Close()
+		model.CloseDB()
+	}()
 }

@@ -16,10 +16,6 @@ func HomeLinks(completion func([]string)) {
 
 	c := colly.NewCollector()
 
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
-	})
-
 	c.OnHTML(".wikitable a", func(e *colly.HTMLElement) {
 		// Get link
 		link := e.Request.AbsoluteURL(e.Attr("href"))
@@ -32,7 +28,6 @@ func HomeLinks(completion func([]string)) {
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("Finish crawling home links")
 		//回调首页所有链接
 		completion(links)
 	})
@@ -118,19 +113,18 @@ func removeDateAndSplitText(target string, year string) []string  {
 }
 
 // 抓取事件相关图片链接
-func EventPictures(event model.Event, completion func()) {
+func EventPictures(event *model.Event, completion func(err error)) {
 	c := colly.NewCollector()
-
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
-	})
 
 	c.OnHTML("meta[property=\"og:image\"]", func(e *colly.HTMLElement) {
 		event.ImgLinksArr = append(event.ImgLinksArr, e.Attr("content"))
 	})
 
+	var crawlErr error
+
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Error Occurred when crawl home links: ", err, r.Request.URL)
+		fmt.Println("Error Occurred when crawl picture links: ", err, r.Request.URL)
+		crawlErr = err
 	})
 
 	c.OnScraped(func(r *colly.Response) {
@@ -143,5 +137,5 @@ func EventPictures(event model.Event, completion func()) {
 		c.Request("GET", "https://zh.wikipedia.org"+link, nil, nil, http.Header{"accept-language":[]string{"zh-CN"}})
 	}
 
-	defer completion()
+	defer completion(crawlErr)
 }

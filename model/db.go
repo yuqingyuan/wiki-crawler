@@ -40,14 +40,19 @@ func DeleteDataTable() {
 
 func InsertIntoDataTable(events []Event) {
 	for _, event := range events {
-		database.Create(event)
+		database.Create(&event)
 	}
 }
 
 func FindAllEventsLinks() (*sql.Rows, error) {
-	return database.Find(&Event{}).Rows()
+	return database.Raw("select *from events").Rows()
+}
+
+func EventsCount() (count int64) {
+	database.Model(&Event{}).Count(&count)
+	return count
 }
 
 func UpdateEvent(event Event) {
-	database.Model(&event).Where("detail = ?", event.Detail).Update("img_links", event.ImgLinks)
+	database.Model(&event).Update("img_links", event.ImgLinks)
 }

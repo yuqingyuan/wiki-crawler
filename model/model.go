@@ -19,6 +19,7 @@ const (
 )
 
 type Event struct {
+	ID 			int64    `gorm:"MEDIUMINT;PRIMARY_KEY;AUTO_INCREMENT"`
 	Class	 	EventType
 	// 是否为公元前
 	IsBC	 	bool
@@ -76,7 +77,7 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
-	return Event{eventType, isBC, eventDate, detail, string(result), "", make([]string, 0)}
+	return Event{0, eventType, isBC, eventDate, detail, string(result), "", make([]string, 0)}
 }
 
 func parseData(date string) (string, bool) {
