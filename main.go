@@ -30,7 +30,9 @@ func main() {
 	event := model.Event{}
 	for rows.Next() {
 		rows.Scan(&event.Class, &event.IsBC, &event.Date, &event.Detail, &event.Links, &event.ImgLinks)
-		crawl.EventPictures(event)
+		crawl.EventPictures(event, func() {
+			model.UpdateEvent(event)
+		})
 	}
 
 	defer model.CloseDB()

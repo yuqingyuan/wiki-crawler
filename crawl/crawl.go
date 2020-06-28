@@ -118,7 +118,7 @@ func removeDateAndSplitText(target string, year string) []string  {
 }
 
 // 抓取事件相关图片链接
-func EventPictures(event model.Event) {
+func EventPictures(event model.Event, completion func()) {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(r *colly.Request) {
@@ -135,7 +135,6 @@ func EventPictures(event model.Event) {
 
 	c.OnScraped(func(r *colly.Response) {
 		event.ImgLinks = strings.Replace(strings.Trim(fmt.Sprint(event.ImgLinksArr), "[]"), " ", ",", -1)
-		model.UpdateEvent(event)
 	})
 
 	links := make(map[string]string)
@@ -143,4 +142,6 @@ func EventPictures(event model.Event) {
 	for _, link := range links {
 		c.Request("GET", "https://zh.wikipedia.org"+link, nil, nil, http.Header{"accept-language":[]string{"zh-CN"}})
 	}
+
+	defer completion()
 }
