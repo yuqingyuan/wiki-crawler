@@ -19,12 +19,14 @@ const (
 )
 
 type Event struct {
-	Class	EventType
+	Class	 	EventType
 	// 是否为公元前
-	IsBC	bool
-	Date 	string
-	Detail	string	`gorm:"type:LONGTEXT"`
-	Links 	string 	`gorm:"type:LONGTEXT"`
+	IsBC	 	bool
+	Date 	 	string
+	Detail	 	string	 `gorm:"type:LONGTEXT"`
+	Links 	 	string   `gorm:"type:LONGTEXT"`
+	ImgLinks 	string 	 `gorm:"type:LONGTEXT"`
+	ImgLinksArr []string `gorm:"-"`
 }
 
 var (
@@ -74,7 +76,7 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
-	return Event{eventType, isBC, eventDate, detail, string(result)}
+	return Event{eventType, isBC, eventDate, detail, string(result), "", make([]string, 0)}
 }
 
 func parseData(date string) (string, bool) {

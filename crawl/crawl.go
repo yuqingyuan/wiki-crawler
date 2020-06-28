@@ -1,6 +1,7 @@
 package crawl
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"net/http"
@@ -114,4 +115,32 @@ func removeDateAndSplitText(target string, year string) []string  {
 		return strings.Split(target, "&&")
 	}
 	return strings.Split(target, "&&")
+}
+
+// 抓取事件相关图片链接
+func EventPictures(event model.Event) {
+	c := colly.NewCollector()
+
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL.String())
+	})
+
+	c.OnHTML("meta[property=\"og:image\"]", func(e *colly.HTMLElement) {
+		event.ImgLinksArr = append(event.ImgLinksArr, e.Attr("content"))
+	})
+
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("Error Occurred when crawl home links: ", err, r.Request.URL)
+	})
+
+	c.OnScraped(func(r *colly.Response) {
+		event.ImgLinks = strings.Replace(strings.Trim(fmt.Sprint(event.ImgLinksArr), "[]"), " ", ",", -1)
+		model.UpdateEvent(event)
+	})
+
+	links := make(map[string]string)
+	json.Unmarshal([]byte(event.Links), &links)
+	for _, link := range links {
+		c.Request("GET", "https://zh.wikipedia.org"+link, nil, nil, http.Header{"accept-language":[]string{"zh-CN"}})
+	}
 }

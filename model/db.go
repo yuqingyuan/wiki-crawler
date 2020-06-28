@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 )
@@ -9,7 +10,7 @@ var (
 	database *gorm.DB
 
 	username = "root"
-	password = "你的数据库密码"
+	password = "yourpassword"
 	dbName 	 = "wiki_crawler"
 )
 
@@ -41,4 +42,12 @@ func InsertIntoDataTable(events []Event) {
 	for _, event := range events {
 		database.Create(event)
 	}
+}
+
+func FindAllEventsLinks() (*sql.Rows, error) {
+	return database.Find(&Event{}).Rows()
+}
+
+func UpdateEvent(event Event) {
+	database.Model(&event).Where("detail = ?", event.Detail).Update("img_links", event.ImgLinks)
 }

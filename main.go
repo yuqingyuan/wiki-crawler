@@ -22,5 +22,16 @@ func main() {
 		})
 	})
 
+	// 抓取图片
+	rows, err := model.FindAllEventsLinks()
+	if err != nil {
+		return
+	}
+	event := model.Event{}
+	for rows.Next() {
+		rows.Scan(&event.Class, &event.IsBC, &event.Date, &event.Detail, &event.Links, &event.ImgLinks)
+		crawl.EventPictures(event)
+	}
+
 	defer model.CloseDB()
 }
