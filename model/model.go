@@ -27,13 +27,15 @@ type Event struct {
 	Detail	 	string	 `gorm:"type:LONGTEXT"`
 	Links 	 	string   `gorm:"type:LONGTEXT"`
 	ImgLinks 	string 	 `gorm:"type:LONGTEXT"`
-	ImgLinksArr []string `gorm:"-"`
 }
 
 var (
 	dateRegexp   = regexp.MustCompile(`^前?\d{1,4}年$`)
 	linkRegexp 	 = regexp.MustCompile(`\[\d+]`)
 	sourceRegexp = regexp.MustCompile(`\[来源请求]`)
+	whichRegexp  = regexp.MustCompile(`\[哪个／哪些？]`)
+	whoRegexp    = regexp.MustCompile(`\[谁？]`)
+	doubtRegexp  = regexp.MustCompile(`\[可疑 –讨论]`)
 )
 
 // 将抓取到的内容转为对象(历史事件|出生|逝世)
@@ -59,6 +61,22 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 	for _, param := range params {
 		detail = strings.ReplaceAll(detail, param, "")
 	}
+	// 去除[哪个／哪些？]
+	params = whichRegexp.FindAllString(detail, math.MaxInt8)
+	for _, param := range params {
+		detail = strings.ReplaceAll(detail, param, "")
+	}
+	// 去除[谁？]
+	params = whoRegexp.FindAllString(detail, math.MaxInt8)
+	for _, param := range params {
+		detail = strings.ReplaceAll(detail, param, "")
+	}
+	// 去除[可疑 –讨论]
+	params = doubtRegexp.FindAllString(detail, math.MaxInt8)
+	for _, param := range params {
+		detail = strings.ReplaceAll(detail, param, "")
+	}
+
 	// Event实例,构建关键字链接
 	linksMap := make(map[string]string)
 	minLen := math.Min(float64(len(texts)), float64(len(links)))
@@ -77,7 +95,7 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
-	return Event{0, eventType, isBC, eventDate, detail, string(result), "", make([]string, 0)}
+	return Event{0, eventType, isBC, eventDate, detail, string(result), ""}
 }
 
 func parseData(date string) (string, bool) {

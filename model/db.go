@@ -30,7 +30,6 @@ func CloseDB() {
 func CreateDataTableIfNotExists() {
 	if !database.HasTable(&Event{}) {
 		database.CreateTable(&Event{})
-		fmt.Println(database)
 	}
 }
 
