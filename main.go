@@ -14,6 +14,8 @@ var (
 )
 
 func main() {
+	model.CreateDataTableIfNotExists()
+
 	crawl.HomeLinks(func(links []string) {
 		taskNum := len(links)
 		if taskNum == 0 {
@@ -21,6 +23,9 @@ func main() {
 		}
 
 		for _, link := range links {
+			// 更新进度
+			fmt.Printf("任务进度:%.2f\r", (float32(progress)/float32(taskNum))*100)
+
 			wg.Add(1)
 			// FIXME: 每次执行一个任务，内部会并发去抓取图片，如果这里不限制会导致并发量过大
 			// 抓取每日详细内容
@@ -28,8 +33,6 @@ func main() {
 				allEvents = append(allEvents, events...)
 				progress += 1
 				wg.Done()
-				// 更新进度
-				fmt.Printf("任务进度:%.2f\r", (float32(progress)/float32(taskNum))*100)
 			})
 			// 阻塞
 			wg.Wait()
@@ -40,6 +43,5 @@ func main() {
 
 	fmt.Println("任务完成, 写入数据库, 总数据量:", len(allEvents))
 
-	model.CreateDataTableIfNotExists()
 	model.InsertIntoDataTable(allEvents)
 }
