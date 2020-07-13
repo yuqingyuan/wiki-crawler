@@ -95,6 +95,9 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 		eventDate, isBC = parseData(year + result)
 	}
 	result, _ := json.Marshal(linksMap)
+	if len(linksMap) == 0 {
+		result = make([]byte, 0)
+	}
 	return Event{0, eventType, isBC, eventDate, detail, string(result), ""}
 }
 

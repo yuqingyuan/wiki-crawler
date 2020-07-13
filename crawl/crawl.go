@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/queue"
+	"math"
 	"net/http"
 	"regexp"
 	"strings"
@@ -17,7 +18,7 @@ import (
 func HomeLinks(completion func([]string)) {
 	links := make([]string, 0)
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.MaxDepth(1))
 
 	c.OnHTML(".wikitable a", func(e *colly.HTMLElement) {
 		links = append(links, e.Request.AbsoluteURL(e.Attr("href")))
@@ -44,7 +45,7 @@ var (
 func DailyEvent(link string, completion func([]model.Event)) {
 	events := make([]model.Event, 0)
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.MaxDepth(1))
 
 	// 大事记
 	c.OnHTML("h3+ul>li", func(e *colly.HTMLElement) {
@@ -61,6 +62,10 @@ func DailyEvent(link string, completion func([]model.Event)) {
 		filterEvents(e, &events, model.EventDeath)
 	})
 
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println(err.Error())
+	})
+
 	// 当前链接所有事件
 	wg := sync.WaitGroup{}
 	c.OnScraped(func(r *colly.Response) {
@@ -68,7 +73,9 @@ func DailyEvent(link string, completion func([]model.Event)) {
 		wg.Add(len(events))
 		for i, v := range events {
 			// FIXME: 防止并发量过大，暂时先这么处理
-			time.Sleep(40 * time.Millisecond)
+			if len(v.Links) != 0 {
+				time.Sleep(500 * time.Millisecond)
+			}
 
 			go func(index int, value model.Event) {
 				analysisSecondaryPage(value, func(imgLinks string) {
@@ -83,7 +90,6 @@ func DailyEvent(link string, completion func([]model.Event)) {
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
-		//fmt.Println(err)
 		completion(events)
 	})
 
@@ -98,7 +104,7 @@ func analysisSecondaryPage(event model.Event, completion func(imgLinks string)) 
 
 	pageLinks := make([]string, 0)
 	for _, link := range links {
-		if !strings.HasPrefix(link, "https://") {
+		if !strings.HasPrefix(link, "https://") && !strings.HasPrefix(link, "http://") {
 			pageLinks = append(pageLinks, "https://zh.wikipedia.org"+link)
 		} else {
 			pageLinks = append(pageLinks, link)
@@ -114,9 +120,9 @@ func analysisSecondaryPage(event model.Event, completion func(imgLinks string)) 
 func getPictureLink(pageLinks []string, completion func(link string)) {
 	links := make([]string, 0)
 
-	c := colly.NewCollector(colly.Async(true))
+	c := colly.NewCollector(colly.MaxDepth(1))
 
-	q, _ := queue.New(len(pageLinks), &queue.InMemoryQueueStorage{MaxSize: 100000000})
+	q, _ := queue.New(len(pageLinks), &queue.InMemoryQueueStorage{MaxSize: math.MaxInt64})
 
 	c.OnHTML("meta[property=\"og:image\"]", func(e *colly.HTMLElement) {
 		link := strings.ReplaceAll(e.Attr("content"), "https://upload.wikimedia.org/wikipedia", "")
@@ -124,7 +130,9 @@ func getPictureLink(pageLinks []string, completion func(link string)) {
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
-		//fmt.Println(err)
+		if err.Error() != "Not Found" {
+			fmt.Println(err.Error())
+		}
 	})
 
 	for _, link := range pageLinks {
