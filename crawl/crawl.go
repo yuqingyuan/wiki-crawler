@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"wiki-crawler/model"
+	model "wiki-crawler/model"
 )
 
 // 抓取Wiki历史上的今天每个月份的链接

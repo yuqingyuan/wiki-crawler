@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"sync"
-	"wiki-crawler/crawl"
-	"wiki-crawler/model"
+	crawl "wiki-crawler/crawl"
+	model "wiki-crawler/model"
 )
 
 var (
