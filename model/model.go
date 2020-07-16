@@ -21,9 +21,8 @@ const (
 type Event struct {
 	ID 			int64    `gorm:"MEDIUMINT;PRIMARY_KEY;AUTO_INCREMENT"`
 	Class	 	EventType
-	// 是否为公元前
-	IsBC	 	bool
-	Date 	 	string
+	Year	    string
+	Date 	 	string	 `gorm:"index:date"`
 	Detail	 	string	 `gorm:"type:LONGTEXT"`
 	Links 	 	string   `gorm:"type:LONGTEXT"`
 	ImgLinks 	string 	 `gorm:"type:LONGTEXT"`
@@ -87,27 +86,23 @@ func ProcessEvent(e *colly.HTMLElement, year string, detail string, eventType Ev
 	}
 	// 事件发生日期
 	components := strings.Split(e.Request.URL.String(), "/")
-	var eventDate string
-	var isBC bool
+	var eventYear, eventDate string
 	if len(components) > 0 {
 		result, _ := url.QueryUnescape(components[len(components) - 1])
 		// 格式化日期(time库太难用....)
-		eventDate, isBC = parseData(year + result)
+		eventYear, eventDate = parseData(year, result)
 	}
 	result, _ := json.Marshal(linksMap)
 	if len(linksMap) == 0 {
 		result = make([]byte, 0)
 	}
-	return Event{0, eventType, isBC, eventDate, detail, string(result), ""}
+	return Event{0, eventType, eventYear, eventDate, detail, string(result), ""}
 }
 
-func parseData(date string) (string, bool) {
-	date = strings.ReplaceAll(date, "年", "-")
+func parseData(year string, date string) (string, string) {
 	date = strings.ReplaceAll(date, "月", "-")
 	date = strings.ReplaceAll(date, "日", "")
-	isBC := strings.Contains(date, "前")
-	if isBC {
-		date = strings.Replace(date, "前", "", 1)
-	}
-	return date, isBC
+	year = strings.ReplaceAll(year, "年", "")
+	year = strings.ReplaceAll(year, "前", "-")
+	return year, date
 }

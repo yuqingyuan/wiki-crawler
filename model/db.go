@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"os"
@@ -50,25 +49,8 @@ func CreateDataTableIfNotExists() {
 	}
 }
 
-func DeleteDataTable() {
-	database.DropTableIfExists(&Event{})
-}
-
 func InsertIntoDataTable(events []Event) {
 	for _, event := range events {
 		database.Create(&event)
 	}
-}
-
-func FindAllEventsLinks() (*sql.Rows, error) {
-	return database.Raw("select *from events").Rows()
-}
-
-func EventsCount() (count int64) {
-	database.Model(&Event{}).Count(&count)
-	return count
-}
-
-func UpdateEvent(event Event) {
-	database.Model(&event).Update("img_links", event.ImgLinks)
 }
